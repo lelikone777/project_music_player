@@ -1,17 +1,16 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
-const toCover = (url = '') => url.replace('{w}', '400').replace('{h}', '400');
+const toCover = (url = '') => url.replace(/100x100/gi, '400x400');
 
-const normalizeSong = (item) => {
-  const attributes = item?.attributes || {};
-  const songId = item?.id || attributes?.playParams?.id || '';
-  const artistName = attributes?.artistName || 'Unknown Artist';
-  const cover = toCover(attributes?.artwork?.url || '');
-  const preview = attributes?.previews?.[0]?.url || '';
+const normalizeSong = (item = {}) => {
+  const songId = item?.trackId ? String(item.trackId) : '';
+  const artistName = item?.artistName || 'Unknown Artist';
+  const cover = toCover(item?.artworkUrl100 || '');
+  const preview = item?.previewUrl || '';
 
   return {
     key: songId,
-    title: attributes?.name || 'Unknown Song',
+    title: item?.trackName || item?.collectionName || 'Unknown Song',
     subtitle: artistName,
     images: {
       coverart: cover,
@@ -22,62 +21,78 @@ const normalizeSong = (item) => {
       actions: [{}, { uri: preview }],
     },
     genres: {
-      primary: attributes?.genreNames?.[0] || 'Unknown',
+      primary: item?.primaryGenreName || 'Unknown',
     },
+    sections: item?.sections || [],
   };
 };
 
-const normalizeSongsResponse = (response) => (response?.data || [])
+const normalizeSongsResponse = (response) => (response?.results || [])
+  .filter((item) => item?.wrapperType === 'track')
   .map(normalizeSong)
   .filter((song) => song.key && song.hub?.actions?.[1]?.uri);
 
+const baseQuery = fetchBaseQuery({
+  baseUrl: 'https://itunes.apple.com/',
+});
+
+const getSongById = async (songid, fetchWithBQ) => {
+  if (!songid) return null;
+
+  const lookupResult = await fetchWithBQ(`lookup?id=${encodeURIComponent(songid)}`);
+  if (!lookupResult.error) {
+    const lookupSong = normalizeSongsResponse(lookupResult.data)[0];
+    if (lookupSong) return lookupSong;
+  }
+
+  const searchResult = await fetchWithBQ(`search?entity=song&limit=1&term=${encodeURIComponent(songid)}`);
+  if (searchResult.error) return null;
+
+  return normalizeSongsResponse(searchResult.data)[0] || null;
+};
+
 export const shazamCoreApi = createApi({
   reducerPath: 'shazamCoreApi',
-  baseQuery: fetchBaseQuery({
-    baseUrl: 'https://shazam-core.p.rapidapi.com/',
-    prepareHeaders: (headers) => {
-      headers.set('X-RapidAPI-Key', import.meta.env.VITE_SHAZAM_CORE_RAPID_API_KEY);
-      headers.set('X-RapidAPI-Host', 'shazam-core.p.rapidapi.com');
-
-      return headers;
-    },
-  }),
+  baseQuery,
   endpoints: (builder) => ({
     getTopCharts: builder.query({
-      query: () => 'v1/search/multi?search_type=SONGS&offset=0&query=top%20hits',
+      query: () => 'search?entity=song&limit=25&term=top%20hits',
       transformResponse: normalizeSongsResponse,
     }),
     getSongsByGenre: builder.query({
-      query: (genre) => `v1/search/multi?search_type=SONGS&offset=0&query=${encodeURIComponent((genre || '').replaceAll('_', ' '))}`,
+      query: (genre) => `search?entity=song&limit=25&term=${encodeURIComponent((genre || '').replaceAll('_', ' '))}`,
       transformResponse: normalizeSongsResponse,
     }),
     getSongsByCountry: builder.query({
-      query: (countryCode) => `v1/search/multi?search_type=SONGS&offset=0&query=${encodeURIComponent(`${countryCode || 'US'} top songs`)}`,
+      query: (countryCode) => `search?entity=song&limit=25&country=${encodeURIComponent(countryCode || 'US')}&term=${encodeURIComponent(`${countryCode || 'US'} top songs`)}`,
       transformResponse: normalizeSongsResponse,
     }),
     getSongsBySearch: builder.query({
-      query: (searchTerm) => `v1/search/multi?search_type=SONGS&offset=0&query=${encodeURIComponent(searchTerm || '')}`,
+      query: (searchTerm) => `search?entity=song&limit=25&term=${encodeURIComponent(searchTerm || '')}`,
       transformResponse: normalizeSongsResponse,
     }),
     getArtistDetails: builder.query({
       async queryFn(artistId, _api, _extraOptions, fetchWithBQ) {
         const artistName = decodeURIComponent(artistId || '');
+        const songsResult = await fetchWithBQ(`search?entity=song&limit=25&term=${encodeURIComponent(artistName)}`);
 
-        const [artistsResult, songsResult] = await Promise.all([
-          fetchWithBQ(`v1/search/multi?search_type=ARTISTS&offset=0&query=${encodeURIComponent(artistName)}`),
-          fetchWithBQ(`v1/search/multi?search_type=SONGS&offset=0&query=${encodeURIComponent(artistName)}`),
-        ]);
-
-        if (artistsResult.error) return { error: artistsResult.error };
         if (songsResult.error) return { error: songsResult.error };
 
-        const artist = artistsResult.data?.data?.[0];
-        const songs = songsResult.data?.data || [];
+        const songs = normalizeSongsResponse(songsResult.data);
+        const artistCover = songs[0]?.images?.coverart || '';
+        const artistGenre = songs[0]?.genres?.primary || 'Unknown';
 
         return {
           data: {
             data: [{
-              ...artist,
+              id: artistId,
+              attributes: {
+                name: artistName || songs[0]?.subtitle || 'Unknown Artist',
+                genreNames: [artistGenre],
+                artwork: {
+                  url: artistCover,
+                },
+              },
               views: {
                 'top-songs': {
                   data: songs,
@@ -89,14 +104,25 @@ export const shazamCoreApi = createApi({
       },
     }),
     getSongDetails: builder.query({
-      query: ({ songid }) => `v1/search/multi?search_type=SONGS&offset=0&query=${encodeURIComponent(songid || '')}`,
-      transformResponse: (response) => normalizeSongsResponse(response)[0] || null,
+      async queryFn({ songid }, _api, _extraOptions, fetchWithBQ) {
+        const song = await getSongById(songid, fetchWithBQ);
+        return { data: song };
+      },
     }),
     getSongRelated: builder.query({
-      query: ({ songid }) => `v1/search/multi?search_type=SONGS&offset=0&query=${encodeURIComponent(songid || '')}`,
-      transformResponse: (response, _meta, arg) => normalizeSongsResponse(response)
-        .filter((song) => song.key !== String(arg?.songid))
-        .slice(0, 10),
+      async queryFn({ songid }, _api, _extraOptions, fetchWithBQ) {
+        const song = await getSongById(songid, fetchWithBQ);
+        if (!song?.subtitle) return { data: [] };
+
+        const relatedResult = await fetchWithBQ(`search?entity=song&limit=25&term=${encodeURIComponent(song.subtitle)}`);
+        if (relatedResult.error) return { error: relatedResult.error };
+
+        const related = normalizeSongsResponse(relatedResult.data)
+          .filter((item) => item.key !== String(songid))
+          .slice(0, 10);
+
+        return { data: related };
+      },
     }),
   }),
 });
