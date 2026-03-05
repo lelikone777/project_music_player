@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="Loading">
+  <defs>
+    <linearGradient id="spinGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#22d3ee" />
+      <stop offset="100%" stop-color="#3b82f6" />
+    </linearGradient>
+  </defs>
+
+  <circle cx="60" cy="60" r="44" fill="none" stroke="#1f2937" stroke-width="10" />
+  <path d="M60 16a44 44 0 0 1 37.8 21.5" fill="none" stroke="url(#spinGrad)" stroke-width="10" stroke-linecap="round" />
+
+  <g>
+    <animateTransform attributeName="transform" type="rotate" from="0 60 60" to="360 60 60" dur="1s" repeatCount="indefinite" />
+    <path d="M49 74V47a4 4 0 0 1 5.9-3.5l23 13.5a4 4 0 0 1 0 7L54.9 77.5A4 4 0 0 1 49 74z" fill="#e5f6ff" opacity="0.95" />
+  </g>
+</svg>

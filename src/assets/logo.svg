@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 96" role="img" aria-label="Pulsetune logo">
+  <defs>
+    <linearGradient id="pulseGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#22d3ee" />
+      <stop offset="100%" stop-color="#3b82f6" />
+    </linearGradient>
+  </defs>
+
+  <rect x="0" y="0" width="360" height="96" rx="20" fill="#0b1020" />
+  <g transform="translate(18,16)">
+    <rect x="0" y="0" width="64" height="64" rx="16" fill="url(#pulseGrad)" />
+    <path d="M13 35h9l5-11 8 24 8-16h8" fill="none" stroke="#0b1020" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
+    <circle cx="48" cy="20" r="5" fill="#0b1020" />
+  </g>
+
+  <text x="98" y="43" fill="#e5f6ff" font-size="28" font-family="Verdana, Geneva, sans-serif" font-weight="700" letter-spacing="1.2">
+    PULSETUNE
+  </text>
+  <text x="100" y="66" fill="#8ea4c3" font-size="12" font-family="Verdana, Geneva, sans-serif" letter-spacing="2">
+    MUSIC STREAM
+  </text>
+</svg>
+
