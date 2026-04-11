@@ -5,16 +5,18 @@ import { DetailsHeader, Error, Loader, RelatedSongs } from '../components';
 
 import { setActiveSong, playPause } from '../redux/features/playerSlice';
 import { useGetSongDetailsQuery, useGetSongRelatedQuery } from '../redux/services/shazamCore';
+import { useLanguage } from '../context/LanguageContext';
 
 const SongDetails = () => {
   const dispatch = useDispatch();
   const { songid, id: artistId } = useParams();
   const { activeSong, isPlaying } = useSelector((state) => state.player);
+  const { t } = useLanguage();
 
   const { data, isFetching: isFetchinRelatedSongs, error } = useGetSongRelatedQuery({ songid });
   const { data: songData, isFetching: isFetchingSongDetails } = useGetSongDetailsQuery({ songid });
 
-  if (isFetchingSongDetails && isFetchinRelatedSongs) return <Loader title="Searching song details" />;
+  if (isFetchingSongDetails && isFetchinRelatedSongs) return <Loader title={t.searchingSongDetails} />;
 
   if (error) return <Error />;
 
@@ -35,7 +37,7 @@ const SongDetails = () => {
       />
 
       <div className="mb-10">
-        <h2 className="text-white text-3xl font-bold">Lyrics:</h2>
+        <h2 className="text-2xl font-bold text-white sm:text-3xl">{t.lyrics}</h2>
 
         <div className="mt-5">
           {songData?.sections?.[1]?.type === 'LYRICS'
@@ -43,7 +45,7 @@ const SongDetails = () => {
               <p key={`lyrics-${line}-${i}`} className="text-gray-400 text-base my-1">{line}</p>
             ))
             : (
-              <p className="text-gray-400 text-base my-1">Sorry, No lyrics found!</p>
+              <p className="text-gray-400 text-base my-1">{t.noLyrics}</p>
             )}
         </div>
       </div>

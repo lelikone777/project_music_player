@@ -18,7 +18,7 @@ const SongCard = ({ song, isPlaying, activeSong, data, i }) => {
   };
 
   return (
-    <div className="flex w-full flex-col p-4 bg-white/5 bg-opacity-80 backdrop-blur-sm animate-slideup rounded-lg cursor-pointer">
+    <div className="flex w-full flex-col rounded-2xl bg-white/5 bg-opacity-80 p-3 backdrop-blur-sm animate-slideup cursor-pointer sm:p-4">
       <div className="relative w-full aspect-square group">
         <div className={`absolute inset-0 justify-center items-center bg-black bg-opacity-50 group-hover:flex ${activeSong?.title === song.title ? 'flex bg-black bg-opacity-70' : 'hidden'}`}>
           <PlayPause
@@ -33,12 +33,12 @@ const SongCard = ({ song, isPlaying, activeSong, data, i }) => {
       </div>
 
       <div className="mt-4 flex flex-col">
-        <p className="font-semibold text-lg text-white truncate">
+        <p className="truncate text-base font-semibold text-white sm:text-lg">
           <Link to={`/songs/${song?.key}`}>
             {song.title}
           </Link>
         </p>
-        <p className="text-sm truncate text-gray-300 mt-1">
+        <p className="mt-1 truncate text-sm text-gray-300">
           <Link to={song.artists ? `/artists/${song?.artists[0]?.adamid}` : '/top-artists'}>
             {song.subtitle}
           </Link>

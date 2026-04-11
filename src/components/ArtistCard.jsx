@@ -6,11 +6,11 @@ const ArtistCard = ({ track }) => {
 
   return (
     <div
-      className="flex w-full flex-col p-4 bg-white/5 bg-opacity-80 backdrop-blur-sm animate-slideup rounded-lg cursor-pointer"
+      className="flex w-full flex-col rounded-2xl bg-white/5 bg-opacity-80 p-3 backdrop-blur-sm animate-slideup cursor-pointer sm:p-4"
       onClick={() => navigate(`/artists/${track?.artists[0].adamid}`)}
     >
       <img alt="song_img" src={track?.images?.coverart} className="w-full aspect-square rounded-lg object-cover" />
-      <p className="mt-4 font-semibold text-lg text-white truncate">
+      <p className="mt-4 truncate text-base font-semibold text-white sm:text-lg">
         {track?.subtitle}
       </p>
     </div>

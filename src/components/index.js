@@ -10,6 +10,7 @@ import MusicPlayer from './MusicPlayer';
 import Loader from './Loader';
 import Error from './Error';
 import SeoManager from './SeoManager';
+import LanguageToggle from './LanguageToggle';
 
 export {
   TopPlay,
@@ -24,4 +25,5 @@ export {
   Loader,
   Error,
   SeoManager,
+  LanguageToggle,
 };

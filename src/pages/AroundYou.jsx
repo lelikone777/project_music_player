@@ -4,12 +4,14 @@ import { useSelector } from 'react-redux';
 
 import { Error, Loader, SongCard } from '../components';
 import { useGetSongsByCountryQuery } from '../redux/services/shazamCore';
+import { useLanguage } from '../context/LanguageContext';
 
 const CountryTracks = () => {
   const [country, setCountry] = useState('');
   const [loading, setLoading] = useState(true);
   const { activeSong, isPlaying } = useSelector((state) => state.player);
   const { data, isFetching, error } = useGetSongsByCountryQuery(country);
+  const { t } = useLanguage();
 
   useEffect(() => {
     axios
@@ -19,15 +21,17 @@ const CountryTracks = () => {
       .finally(() => setLoading(false));
   }, []);
 
-  if (isFetching && loading) return <Loader title="Loading Songs around you..." />;
+  if (isFetching && loading) return <Loader title={t.loadingAroundYou} />;
 
   if (error && country !== '') return <Error />;
 
   return (
     <div className="flex flex-col">
-      <h2 className="font-bold text-3xl text-white text-left mt-4 mb-10">Around you <span className="font-black">{country}</span></h2>
+      <h2 className="mb-6 mt-2 text-left text-2xl font-bold text-white sm:mb-10 sm:mt-4 sm:text-3xl">
+        {t.aroundYou(country)}
+      </h2>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 2xl:grid-cols-4">
         {data?.slice(0, 8).map((song, i) => (
           <SongCard
             key={song.key}

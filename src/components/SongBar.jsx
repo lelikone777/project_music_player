@@ -5,27 +5,27 @@ import { Link } from 'react-router-dom';
 import PlayPause from './PlayPause';
 
 const SongBar = ({ song, i, artistId, isPlaying, activeSong, handlePauseClick, handlePlayClick }) => (
-  <div className={`w-full flex flex-row items-center hover:bg-[#4c426e] ${activeSong?.title === song?.title ? 'bg-[#4c426e]' : 'bg-transparent'} py-2 p-4 rounded-lg cursor-pointer mb-2`}>
-    <h3 className="font-bold text-base text-white mr-3">{i + 1}.</h3>
-    <div className="flex-1 flex flex-row justify-between items-center">
+  <div className={`mb-2 flex w-full items-center gap-3 rounded-2xl px-3 py-3 transition-colors hover:bg-[#4c426e] ${activeSong?.title === song?.title ? 'bg-[#4c426e]' : 'bg-transparent'}`}>
+    <h3 className="w-6 shrink-0 text-sm font-bold text-white sm:text-base">{i + 1}.</h3>
+    <div className="flex min-w-0 flex-1 items-center gap-3">
       <img
-        className="w-20 h-20 rounded-lg"
+        className="h-14 w-14 shrink-0 rounded-xl object-cover sm:h-16 sm:w-16"
         src={artistId ? song?.attributes?.artwork?.url.replace('{w}', '125').replace('{h}', '125') : song?.images?.coverart}
         alt={song?.title}
       />
-      <div className="flex-1 flex flex-col justify-center mx-3">
+      <div className="min-w-0 flex-1">
         {!artistId ? (
           <Link to={`/songs/${song.key}`}>
-            <p className="text-xl font-bold text-white">
+            <p className="truncate text-sm font-bold text-white sm:text-base lg:text-lg">
               {song?.title}
             </p>
           </Link>
         ) : (
-          <p className="text-xl font-bold text-white">
+          <p className="truncate text-sm font-bold text-white sm:text-base lg:text-lg">
             {song?.attributes?.name}
           </p>
         )}
-        <p className="text-base text-gray-300 mt-1">
+        <p className="mt-1 truncate text-xs text-gray-300 sm:text-sm">
           {artistId ? song?.attributes?.albumName : song?.subtitle}
         </p>
       </div>

@@ -5,34 +5,41 @@ import { Error, Loader, SongCard } from '../components';
 import { selectGenreListId } from '../redux/features/playerSlice';
 import { useGetSongsByGenreQuery } from '../redux/services/shazamCore';
 import { genres } from '../assets/constants';
+import { useLanguage } from '../context/LanguageContext';
 
 const Discover = () => {
   const dispatch = useDispatch();
   const { genreListId } = useSelector((state) => state.player);
   const { activeSong, isPlaying } = useSelector((state) => state.player);
   const { data, isFetching, error } = useGetSongsByGenreQuery(genreListId || 'POP');
+  const { t } = useLanguage();
 
-  if (isFetching) return <Loader title="Loading songs..." />;
+  if (isFetching) return <Loader title={t.loadingSongs} />;
 
   if (error) return <Error />;
 
-  const genreTitle = genres.find(({ value }) => value === genreListId)?.title;
+  const selectedGenre = genreListId || 'POP';
+  const genreTitle = t.genres[selectedGenre] || genres.find(({ value }) => value === selectedGenre)?.title || selectedGenre;
 
   return (
     <div className="flex flex-col">
-      <div className="w-full flex justify-between items-center sm:flex-row flex-col mt-4 mb-10">
-        <h2 className="font-bold text-3xl text-white text-left">Discover {genreTitle}</h2>
+      <div className="mb-6 mt-2 flex w-full flex-col gap-4 sm:mb-10 sm:mt-4 sm:flex-row sm:items-center sm:justify-between">
+        <h2 className="text-left text-2xl font-bold text-white sm:text-3xl">{t.discoverGenre(genreTitle)}</h2>
 
         <select
           onChange={(e) => dispatch(selectGenreListId(e.target.value))}
-          value={genreListId || 'POP'}
-          className="bg-black text-gray-300 p-3 text-sm rounded-lg outline-none sm:mt-0 mt-5"
+          value={selectedGenre}
+          className="w-full rounded-xl bg-black p-3 text-sm text-gray-300 outline-none sm:mt-0 sm:w-auto"
         >
-          {genres.map((genre) => <option key={genre.value} value={genre.value}>{genre.title}</option>)}
+          {genres.map((genre) => (
+            <option key={genre.value} value={genre.value}>
+              {t.genres[genre.value] || genre.title}
+            </option>
+          ))}
         </select>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 2xl:grid-cols-4">
         {data?.slice(0, 8).map((song, i) => (
           <SongCard
             key={song.key}
