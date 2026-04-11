@@ -11,6 +11,7 @@ import Loader from './Loader';
 import Error from './Error';
 import SeoManager from './SeoManager';
 import LanguageToggle from './LanguageToggle';
+import PageSkeleton, { PageHeaderSkeleton, SongGridSkeleton, ArtistGridSkeleton, DetailsSkeleton } from './PageSkeleton';
 
 export {
   TopPlay,
@@ -26,4 +27,9 @@ export {
   Error,
   SeoManager,
   LanguageToggle,
+  PageSkeleton,
+  PageHeaderSkeleton,
+  SongGridSkeleton,
+  ArtistGridSkeleton,
+  DetailsSkeleton,
 };

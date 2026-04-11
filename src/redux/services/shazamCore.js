@@ -1,6 +1,30 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
-const toCover = (url = '') => url.replace(/100x100/gi, '400x400');
+const toCover = (url = '') => url
+  .replace(/100x100/gi, '400x400')
+  .replace(/\/\d+x\d+bb(?=\.)/gi, '/400x400bb');
+
+const genreFeedMap = {
+  POP: 14,
+  HIP_HOP_RAP: 18,
+  DANCE: 17,
+  ELECTRONIC: 7,
+  SOUL_RNB: 15,
+  ALTERNATIVE: 20,
+  ROCK: 21,
+  LATIN: 12,
+  FILM_TV: 16,
+  COUNTRY: 6,
+  WORLDWIDE: 19,
+  REGGAE_DANCE_HALL: 24,
+  HOUSE: 17,
+  K_POP: 51,
+};
+
+const normalizeCountryCode = (countryCode = 'US') => {
+  const normalizedCountryCode = String(countryCode).trim().toLowerCase();
+  return /^[a-z]{2}$/.test(normalizedCountryCode) ? normalizedCountryCode : 'us';
+};
 
 const normalizeSong = (item = {}) => {
   const songId = item?.trackId ? String(item.trackId) : '';
@@ -27,14 +51,65 @@ const normalizeSong = (item = {}) => {
   };
 };
 
+const normalizeRssSong = (entry = {}) => {
+  const songId = entry?.id?.attributes?.['im:id'] || '';
+  const artistName = entry?.['im:artist']?.label || 'Unknown Artist';
+  const images = entry?.['im:image'] || [];
+  const previewLink = (entry?.link || []).find((item) => item?.attributes?.['im:assetType'] === 'preview');
+  const genreName = entry?.category?.attributes?.label || entry?.category?.attributes?.term || 'Unknown';
+
+  return {
+    key: songId,
+    title: entry?.['im:name']?.label || entry?.title?.label || 'Unknown Song',
+    subtitle: artistName,
+    images: {
+      coverart: toCover(images[images.length - 1]?.label || ''),
+      background: toCover(images[images.length - 1]?.label || ''),
+    },
+    artists: [{ adamid: encodeURIComponent(artistName) }],
+    hub: {
+      actions: [{}, { uri: previewLink?.attributes?.href || '' }],
+    },
+    genres: {
+      primary: genreName,
+    },
+    sections: [],
+  };
+};
+
 const normalizeSongsResponse = (response) => (response?.results || [])
   .filter((item) => item?.wrapperType === 'track')
   .map(normalizeSong)
   .filter((song) => song.key && song.hub?.actions?.[1]?.uri);
 
+const normalizeRssSongsResponse = (response) => {
+  const entries = response?.feed?.entry || response?.feed?.results || [];
+
+  return entries
+    .map((entry) => (entry?.['im:name'] ? normalizeRssSong(entry) : normalizeSong({
+      trackId: entry?.id,
+      artistName: entry?.artistName,
+      artworkUrl100: entry?.artworkUrl100,
+      previewUrl: entry?.previewUrl,
+      trackName: entry?.name,
+      primaryGenreName: entry?.genres?.[0]?.name,
+    })))
+    .filter((song) => song.key && song.hub?.actions?.[1]?.uri);
+};
+
 const baseQuery = fetchBaseQuery({
   baseUrl: 'https://itunes.apple.com/',
 });
+
+const getTopSongsFeed = async ({ countryCode = 'US', genre }, fetchWithBQ) => {
+  const normalizedCountryCode = normalizeCountryCode(countryCode);
+  const genrePath = genreFeedMap[genre] ? `/genre=${genreFeedMap[genre]}` : '';
+  const result = await fetchWithBQ(`${normalizedCountryCode}/rss/topsongs/limit=25${genrePath}/json`);
+
+  if (result.error) return { error: result.error };
+
+  return { data: normalizeRssSongsResponse(result.data) };
+};
 
 const getSongById = async (songid, fetchWithBQ) => {
   if (!songid) return null;
@@ -56,16 +131,25 @@ export const shazamCoreApi = createApi({
   baseQuery,
   endpoints: (builder) => ({
     getTopCharts: builder.query({
-      query: () => 'search?entity=song&limit=25&term=top%20hits',
-      transformResponse: normalizeSongsResponse,
+      async queryFn(_arg, _api, _extraOptions, fetchWithBQ) {
+        return getTopSongsFeed({ countryCode: 'US' }, fetchWithBQ);
+      },
     }),
     getSongsByGenre: builder.query({
-      query: (genre) => `search?entity=song&limit=25&term=${encodeURIComponent((genre || '').replaceAll('_', ' '))}`,
-      transformResponse: normalizeSongsResponse,
+      async queryFn(genre, _api, _extraOptions, fetchWithBQ) {
+        if (genreFeedMap[genre]) {
+          return getTopSongsFeed({ countryCode: 'US', genre }, fetchWithBQ);
+        }
+
+        const result = await fetchWithBQ(`search?entity=song&limit=25&term=${encodeURIComponent((genre || '').replaceAll('_', ' '))}`);
+        if (result.error) return { error: result.error };
+        return { data: normalizeSongsResponse(result.data) };
+      },
     }),
     getSongsByCountry: builder.query({
-      query: (countryCode) => `search?entity=song&limit=25&country=${encodeURIComponent(countryCode || 'US')}&term=${encodeURIComponent(`${countryCode || 'US'} top songs`)}`,
-      transformResponse: normalizeSongsResponse,
+      async queryFn(countryCode, _api, _extraOptions, fetchWithBQ) {
+        return getTopSongsFeed({ countryCode }, fetchWithBQ);
+      },
     }),
     getSongsBySearch: builder.query({
       query: (searchTerm) => `search?entity=song&limit=25&term=${encodeURIComponent(searchTerm || '')}`,
